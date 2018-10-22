@@ -1,0 +1,4 @@
+id,externalImageId,platformImageId,patientId,isHoldout,isFace,source,createdAt
+1,ext-1,plat-1,patient-1,false,false,imagine,2017-10-03T12:23:47+02:00
+2,ext-2,plat-2,patient-2,true,true,backbone,2018-01-03T12:00:00+02:00
+3,ext-3,plat-3,patient-1,false,false,imagine,2018-01-02T12:23:47+02:00

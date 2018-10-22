@@ -1,0 +1,8 @@
+evaluationId,unfitReason
+2,bad_light
+2,bad_framing
+2,blurry
+2,low_resolution
+2,too_far_away
+2,icd10_missing
+2,lesion_covered
