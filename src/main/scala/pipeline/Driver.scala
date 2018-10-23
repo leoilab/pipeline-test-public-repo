@@ -15,21 +15,14 @@ object Driver {
       CsvSchema.clinicalCharacteristic
     )
     val derms = loadCsv[Derm]("./data/derms.csv", CsvSchema.derm)
-    val evaluationProperties = loadCsv[EvaluationProperty](
-      "./data/evaluationProperties.csv",
-      CsvSchema.evaluationProperty
-    )
     val evaluations  = loadCsv[Evaluation]("./data/evaluations.csv", CsvSchema.evaluation)
-    val images       = loadCsv[Image]("./data/images.csv", CsvSchema.image)
     val unfitReasons = loadCsv[UnfitReason]("./data/unfitReasons.csv", CsvSchema.unfitReason)
 
     Transformer
       .transform(
         clinicalCharacteristics,
         derms,
-        evaluationProperties,
         evaluations,
-        images,
         unfitReasons
       )(spark)
       .write.format("csv")
