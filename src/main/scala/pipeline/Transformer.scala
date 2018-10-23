@@ -1,13 +1,19 @@
 package pipeline
 
-import java.nio.file.Path
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{SparkSession, Dataset, DataFrame}
+import Models._
 
 object Transformer {
 
-  def transform(spark: SparkSession, dataFolder: Path): DataFrame = {
-    ???
+  def transform(
+      clinicalCharacteristics: Dataset[ClinicalCharacteristic],
+      derms:                   Dataset[Derm],
+      evaluationProperties:    Dataset[EvaluationProperty],
+      evaluations:             Dataset[Evaluation],
+      images:                  Dataset[Image],
+      unfitReasons:            Dataset[UnfitReason]
+  )(implicit spark:            SparkSession): DataFrame = {
+    derms.toDF
   }
 
 }

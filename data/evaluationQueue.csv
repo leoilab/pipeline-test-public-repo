@@ -1,4 +1,0 @@
-dermId,imageId,externalImageId,isParked,isBackboneTest
-abc123,1,abc123,false,true
-abc234,2,abc234,true,true
-abc345,3,abc345,true,false

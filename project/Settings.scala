@@ -40,15 +40,13 @@ object Settings {
 
     val scala = "2.11.9"
 
-    val spark               = "2.3.1"
-    val scalaTest           = "3.0.5"
+    val spark = "2.3.1"
   }
 
   val dependencies = Def.setting(
     Seq(
-      "org.apache.spark" %% "spark-core" % versions.spark % Provided,
-      "org.apache.spark" %% "spark-sql" % versions.spark % Provided,
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test
+      "org.apache.spark" %% "spark-core" % versions.spark,
+      "org.apache.spark" %% "spark-sql" % versions.spark
     )
   )
 
