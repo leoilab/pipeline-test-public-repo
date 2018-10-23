@@ -8,9 +8,7 @@ object Transformer {
   def transform(
       clinicalCharacteristics: Dataset[ClinicalCharacteristic],
       derms:                   Dataset[Derm],
-      evaluationProperties:    Dataset[EvaluationProperty],
       evaluations:             Dataset[Evaluation],
-      images:                  Dataset[Image],
       unfitReasons:            Dataset[UnfitReason]
   )(implicit spark:            SparkSession): DataFrame = {
     derms.toDF

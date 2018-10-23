@@ -1,55 +1,7 @@
 evaluationId,name,selected
-1,Hypo-pigmentation,
-1,Scales,
-1,Xerosis,
-1,Induration,
-1,Swelling,true
-1,Lichenification,
-1,Pustules,
-1,Excoriations,
-1,Fissures,
-1,Papules,
-1,Koebner sign,
-1,Vesicles,
-1,Hyper-pigmentation,
-1,Erythema,
-1,Plaque,
-1,Macules,
-1,Erosions,false
-1,Auspitz sign,
-2,Hypo-pigmentation,
-2,Scales,
-2,Xerosis,
-2,Induration,
-2,Swelling,
-2,Lichenification,
-2,Pustules,
-2,Excoriations,
-2,Fissures,
-2,Papules,
-2,Koebner sign,
-2,Vesicles,
-2,Hyper-pigmentation,
-2,Erythema,
-2,Plaque,
-2,Macules,
-2,Erosions,
-2,Auspitz sign,
-3,Hypo-pigmentation,
-3,Scales,
-3,Xerosis,
-3,Induration,
-3,Swelling,
-3,Lichenification,
-3,Pustules,
-3,Excoriations,true
-3,Fissures,
-3,Papules,
-3,Koebner sign,true
-3,Vesicles,
-3,Hyper-pigmentation,
-3,Erythema,
-3,Plaque,false
-3,Macules,
-3,Erosions,
-3,Auspitz sign,
+1,Scales,true
+1,Induration,false
+3,Scales,false
+3,Induration,false
+4,Scales,true
+4,Induration,true

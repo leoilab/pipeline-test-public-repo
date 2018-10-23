@@ -2,39 +2,19 @@ package pipeline
 
 object Models {
 
-  case class ClinicalCharacteristic(evaluationId: Long, name:        String, selected: Option[Boolean])
-
-  case class EvaluationProperty(evaluationId:     Long, propertyKey: String, propertyValue: String)
+  case class ClinicalCharacteristic(evaluationId: Long, name:        String, selected: Boolean)
 
   case class UnfitReason(evaluationId:            Long, unfitReason: String)
-
-  case class Image(
-      id:              Long,
-      externalImageId: String,
-      platformImageId: String,
-      patientId:       String,
-      isHoldout:       Boolean,
-      isFace:          Boolean,
-      source:          String,
-      createdAt:       java.sql.Timestamp
-  )
 
   case class Evaluation(
       id:             Long,
       imageId:        Long,
-      outlineId:      Option[Long],
-      batchId:        String,
       diagnosis:      String,
-      certainty:      Option[String],
-      dermId:         String,
-      createdAt:      java.sql.Timestamp,
-      tagVersion:     String,
-      isBackboneTest: Boolean
+      dermId:         String
   )
 
   case class Derm(
       id:        String,
-      name:      String,
-      createdAt: java.sql.Timestamp
+      name:      String
   )
 }
