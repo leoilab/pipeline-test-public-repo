@@ -33,7 +33,7 @@ The `transform` step should produce one row for each imagine, combining the eval
 ImageId, Monica_evaluationId, Monica_diagnosis, Monica_scales, Monica_induration, Ionela_evaluationId, Ionela_diagnosis, Ionela_scales, Ionela_induration, Ionela_bad_light, Ionela_bad_framing
 1      , 1                  , L40.0           , true         , false            , 2                  , NEP             , null         , null             , true               , true   
 2      , 3                  , L20.2           , false        , false            , 4                  , L41.0           , true         , false            , null               , null        
-3      , null               , null            , null         , null             , 5                  , NEP             ,              ,                  , true               , true
+3      , null               , null            , null         , null             , 5                  , NEP             , null        , null              , true               , true
 ```
 
 
