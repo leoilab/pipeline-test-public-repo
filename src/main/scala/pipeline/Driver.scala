@@ -1,7 +1,8 @@
 package pipeline
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SparkSession, Dataset, Encoder}
+import org.apache.spark.sql.{Dataset, Encoder, SparkSession}
+import org.apache.spark.sql.functions.{lit, unix_timestamp}
 import Models._
 
 object Driver {
@@ -25,7 +26,13 @@ object Driver {
         evaluations,
         unfitReasons
       )(spark)
-      .write.format("csv")
+      .withColumn("timestamp", lit(unix_timestamp())) // for folder partitioning
+      .write
+      .format("csv")
+      .option("header","true")
+      // good practice during the dev phase, to store temporary results
+      .mode("append")
+      .partitionBy("timestamp")
       .save("./result.csv")
   }
 

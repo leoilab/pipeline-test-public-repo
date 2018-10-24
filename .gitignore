@@ -4,6 +4,7 @@
 
 # osx
 .DS_Store
+result.csv/
 target/
 extract-driver/target/
 test-data/staging
