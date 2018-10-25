@@ -108,3 +108,19 @@ This code results with:
 
 ![sparkjobs](images/singlepass-sparkjobs.JPG)
 ![executors](images/singlepass-executors.JPG)
+
+### Further work
+Error handling and monitoring of the pipeline needs working.
+
+This could not be applicable to medical systems, however it is common to replace '.option("mode", "FAILFAST")' in CSV readers
+with:
+ * .option("mode", "DROPMALFORMED") if data can be ignored
+ * or in more strict environments to use .option("mode", "PERMISSIVE"). In this case one has to handle malformed row manually (stored in the _corrup_record), which can be done (simplest way of handling of malformed rows is to simply persistem them separately. [Can discuss best practices of doing that]
+
+ Another aspect is monitoring which is good to implement, at least on the level of submitting row counts on each level which
+ causes changes in row numbers. These counts can be collected in accumulators and submitted async to the main pipeline.
+ Such counts can be basis of auto-recovery of pipelines, due to early detection of malformed data (most trivial example: when doing
+ inner joins, one of the table is missing, and the join results with 0 rows. This will not be an error in a pipeline in a sense
+ of an exception occurring, but will definitely need an auto recovery process implemented).
+ [Can discuss this further]
+
