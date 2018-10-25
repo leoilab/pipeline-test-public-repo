@@ -1,6 +1,5 @@
 package pipeline
 
-import org.apache.spark.sql.{Dataset, Encoder, SparkSession}
 import org.apache.spark.sql.functions.{lit, unix_timestamp}
 
 object Driver {
@@ -31,21 +30,5 @@ object Driver {
       .save("./result.csv")
 
     //Thread.sleep(60000)
-  }
-
-
-
-  private def loadCsv[M : Encoder](file: String, schema: CsvSchema.Schema[M])(implicit spark: SparkSession): Dataset[M] = {
-    import spark.implicits._
-
-    spark.read
-      .format("csv")
-      .schema(schema)
-      .option("header", "true")
-      .option("mode", "FAILFAST")
-      .option("treatEmptyValuesAsNulls", "true")
-      .load(file)
-      .toDF()
-      .as[M]
   }
 }
