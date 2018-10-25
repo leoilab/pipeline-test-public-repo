@@ -1,7 +1,7 @@
 package pipeline
 
 import org.apache.spark.sql.{SparkSession, Dataset, DataFrame}
-import org.apache.spark.sql.functions.{broadcast}
+import org.apache.spark.sql.functions._
 import Models._
 
 object Transformer {
@@ -12,15 +12,14 @@ object Transformer {
       evaluations:             Dataset[Evaluation],
       unfitReasons:            Dataset[UnfitReason]
   )(implicit spark:            SparkSession): DataFrame = {
-    //derms.toDF // original code, is the transformation missing?
 
     val evaluationsUpdated = evaluations.withColumnRenamed("id", "evaluationId")
     val dermsUpdated = derms.withColumnRenamed("id", "dermId") // broadcasted
     val clinicalCharacteristicsUpdated = clinicalCharacteristics.withColumnRenamed("name", "clinicalCharacteristicsName")
-    val unfitReasonsUpdated = unfitReasons
+    val unfitReasonsUpdated = unfitReasons // in the end no transformation
 
-    spark.conf.set("spark.sql.join.preferSortMergeJoin", "true")
-    spark.conf.set("spark.sql.autoBroadcastJoinThreshold", -1) // disable auto broadcast
+    //spark.conf.set("spark.sql.join.preferSortMergeJoin", "true")
+    //spark.conf.set("spark.sql.autoBroadcastJoinThreshold", -1) // disable auto broadcast
 
     val evaluationsJoined = evaluationsUpdated
       // force to broadcast as derms likely is a dim table with number of rows that will not cause out of memory (assumption)
@@ -35,7 +34,7 @@ object Transformer {
       .drop(clinicalCharacteristicsUpdated("evaluationId"))
       .toDF
 
-    println(evaluationsJoined.explain)
+    //println(evaluationsJoined.explain)
     //== Physical Plan == without setting spark.sql.autoBroadcastJoinThreshold, add done as broadcast, a very poor test
     //*(4) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16, unfitReason#42, clinicalCharacteristicsName#56, selected#5]
     //+- *(4) BroadcastHashJoin [evaluationId#48L], [evaluationId#3L], LeftOuter, BuildRight
@@ -56,17 +55,47 @@ object Transformer {
     //    :     :        +- *(2) BroadcastHashJoin [dermId#29], [dermId#53], Inner, BuildRight
     //    :     :           :- *(2) Project [id#26L AS evaluationId#48L, imageId#27L, diagnosis#28, dermId#29]
 
-    // NOTE: sort-merge-join should not cause driver failure, so I assume this was not your case. Sort-merge-join would
-    // trigger a full shuffle phase which likely would be costly, but should not affect the driver. Worst cast scenario
-    // would be heavy skew on the partitions, which would cause some workers to take longer to complete, and in extreme
-    // case would start spillng to the disk. In absolute worst case, the disk space could run out, thus causing the
-    // worker to fail, and which would be unrecoverable as the defualt recovery scenario (4 retries) would of course
-    // not help.
-    // After giving it some thought, the best candidate for failing your code due to out of memory of the driver, would
-    // be if you enforced broadcast join on one of the fact tables. However this is just my guess based on simply
-    // thinking about the problem, and not seeing your case.
+    val evp1 = evaluationsJoined
+      .withColumn("pivot_column", concat(evaluationsJoined("name"), lit("_evaluationId")))
+      .groupBy("imageId")
+      .pivot("pivot_column")
+      .agg(max("evaluationId"))
 
-    evaluationsJoined
+    val evp2 = evaluationsJoined
+      .withColumn("pivot_column", concat(evaluationsJoined("name"), lit("_diagnosis")))
+      .groupBy("imageId")
+      .pivot("pivot_column")
+      .agg(max("diagnosis"))
+
+    val evp3 = evaluationsJoined
+      .withColumn("pivot_column", concat(evaluationsJoined("name"), lit("_"), evaluationsJoined("clinicalCharacteristicsName")))
+      .groupBy("imageId")
+      .pivot("pivot_column")
+      .agg(max("selected"))
+
+    val evp4 = evaluationsJoined
+      .withColumn("pivot_column", concat(evaluationsJoined("name"), lit("_"), evaluationsJoined("unfitReason")))
+      .withColumn("unfitReasonBool", !evaluationsJoined("unfitReason").isNull)
+      .groupBy("imageId")
+      .pivot("pivot_column")
+      .agg(max("unfitReasonBool"))
+
+    val evaluationPivotJoined =
+      evp1
+        .join(evp2, "imageId")
+        .join(evp3, "imageId")
+        .join(evp4, "imageId")
+        .drop("null")
+
+    val columnNames = new collection.mutable.ArrayBuffer[String]
+    columnNames.append("imageId")
+    columnNames.appendAll(evaluationPivotJoined.columns.filter(_ != "imageId").sorted(Ordering[String].reverse))
+
+    val columns = columnNames.map(c => evaluationPivotJoined(c)).toArray
+
+    val evaluationPivotOrdered = evaluationPivotJoined.select(columns :_*).orderBy(evaluationPivotJoined("imageId"))
+
+    evaluationPivotOrdered
   }
 
 }

@@ -1,7 +1,6 @@
 # IntelliJ stuff
 .idea
 
-
 # osx
 .DS_Store
 result.csv/

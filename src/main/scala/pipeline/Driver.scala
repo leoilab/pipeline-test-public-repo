@@ -27,13 +27,16 @@ object Driver {
         unfitReasons
       )(spark)
       .withColumn("timestamp", lit(unix_timestamp())) // for folder partitioning
+      .coalesce(1) // create a single file by coalescing the Spark partitions
       .write
       .format("csv")
       .option("header","true")
-      // good practice during the dev phase, to store temporary results
+      // good practice during the dev phase, to store temporary results in separate folders
       .mode("append")
       .partitionBy("timestamp")
       .save("./result.csv")
+
+    //Thread.sleep(60000)
   }
 
   private def setupSpark(): SparkSession = {
