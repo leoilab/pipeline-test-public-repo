@@ -8,7 +8,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
 class CoreUnitTest extends FunSuite with
   BeforeAndAfterEach with BeforeAndAfterAll{
 
-  @transient var spark: SparkSession = null
+  @transient implicit var spark: SparkSession = null
   @transient private val clinicalCharacteristics = WarehouseReader.openClinicalCharacteristics()(spark)
   @transient private val derms = WarehouseReader.openDerm()(spark)
   @transient private val evaluations  = WarehouseReader.openEvaluation()(spark)
@@ -26,7 +26,7 @@ class CoreUnitTest extends FunSuite with
     val expectedStringOutput = """1,1,L40.0,true,false,2,NEP,true,true,,
                                  |2,3,L20.2,false,false,4,L41.0,,,true,true
                                  |3,,,,,5,NEP,true,true,,"""
-    val dataFrameResult = Transformer.transform(clinicalCharacteristics, derms, evaluations, unfitReasons)(spark)
+    val dataFrameResult = Transformer.transform(clinicalCharacteristics, derms, evaluations, unfitReasons)
     val actualStringOutput = dataFrameResult.collect.map(_.mkString(",")).mkString("\n").replace("null", "")
 
     assert(expectedStringOutput == actualStringOutput)

@@ -18,7 +18,7 @@ object Driver {
         derms,
         evaluations,
         unfitReasons
-      )(spark)
+      )
       .withColumn("timestamp", lit(unix_timestamp())) // for folder partitioning
       .coalesce(1) // create a single file by coalescing the Spark partitions
       .write
