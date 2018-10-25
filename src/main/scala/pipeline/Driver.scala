@@ -1,24 +1,18 @@
 package pipeline
 
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{lit, unix_timestamp}
 
 object Driver {
 
   def main(args: Array[String]): Unit = {
+    // Simple benchmark
+    val start = System.nanoTime()
+
     implicit val spark = SparkSessionAndConfigBuilder.setupSpark()
 
-    val clinicalCharacteristics = WarehouseReader.openClinicalCharacteristics()
-    val derms = WarehouseReader.openDerm()
-    val evaluations  = WarehouseReader.openEvaluation()
-    val unfitReasons = WarehouseReader.openUnfitReason()
-
-    Transformer
-      .transform(
-        clinicalCharacteristics,
-        derms,
-        evaluations,
-        unfitReasons
-      )
+    //runMultipleReadTransformer()
+    runExperimentalSingleReadTransformer()
       .withColumn("timestamp", lit(unix_timestamp())) // for folder partitioning
       .coalesce(1) // create a single file by coalescing the Spark partitions
       .write
@@ -29,6 +23,27 @@ object Driver {
       .partitionBy("timestamp")
       .save("./result.csv")
 
-    //Thread.sleep(60000)
+    println(s"total time: ${(System.nanoTime()-start)/1000000} miliseconds")
+    Thread.sleep(300000) // when needs to look at the SparkUI
+  }
+
+  def runMultipleReadTransformer()(implicit spark: SparkSession): DataFrame = {
+    MultipleReadTransformer
+      .transform(
+        DermatologicalEvaluationWarehouseReader.openClinicalCharacteristics,
+        DermatologicalEvaluationWarehouseReader.openDerm,
+        DermatologicalEvaluationWarehouseReader.openEvaluation,
+        DermatologicalEvaluationWarehouseReader.openUnfitReason
+      )
+  }
+
+  def runExperimentalSingleReadTransformer()(implicit spark: SparkSession): DataFrame = {
+    ExperimentalSingleReadTransformer
+      .transform(
+        DermatologicalEvaluationWarehouseReader.openClinicalCharacteristicsAsStringDataFrame,
+        DermatologicalEvaluationWarehouseReader.openDermAsStringDataFrame,
+        DermatologicalEvaluationWarehouseReader.openEvaluationAsStringDataFrame,
+        DermatologicalEvaluationWarehouseReader.openUnfitReasonAsStringDataFrame
+      )
   }
 }

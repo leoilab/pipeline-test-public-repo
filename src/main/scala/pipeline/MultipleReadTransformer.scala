@@ -4,7 +4,7 @@ import org.apache.spark.sql.{SparkSession, Dataset, DataFrame}
 import org.apache.spark.sql.functions._
 import Models._
 
-object Transformer {
+object MultipleReadTransformer {
 
   def transform(
       clinicalCharacteristics: Dataset[ClinicalCharacteristic],
@@ -18,6 +18,7 @@ object Transformer {
     val clinicalCharacteristicsUpdated = clinicalCharacteristics.withColumnRenamed("name", "clinicalCharacteristicsName")
     val unfitReasonsUpdated = unfitReasons // in the end no transformation
 
+    // TODO: these two should be set for large size jobs
     //spark.conf.set("spark.sql.join.preferSortMergeJoin", "true")
     //spark.conf.set("spark.sql.autoBroadcastJoinThreshold", -1) // disable auto broadcast
 
@@ -34,27 +35,7 @@ object Transformer {
       .drop(clinicalCharacteristicsUpdated("evaluationId"))
       .toDF
 
-    //println(evaluationsJoined.explain)
-    //== Physical Plan == without setting spark.sql.autoBroadcastJoinThreshold, add done as broadcast, a very poor test
-    //*(4) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16, unfitReason#42, clinicalCharacteristicsName#56, selected#5]
-    //+- *(4) BroadcastHashJoin [evaluationId#48L], [evaluationId#3L], LeftOuter, BuildRight
-    //:- *(4) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16, unfitReason#42]
-    //:  +- *(4) BroadcastHashJoin [evaluationId#48L], [evaluationId#41L], LeftOuter, BuildRight
-    //  :     :- *(4) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16]
-    //:     :  +- *(4) BroadcastHashJoin [dermId#29], [dermId#53], Inner, BuildRight
-    //  :     :     :- *(4) Project [id#26L AS evaluationId#48L, imageId#27L, diagnosis#28, dermId#29]
-
-    // == Physical Plan == with setting spark.sql.autoBroadcastJoinThreshold -1, better test (still poor), note enforced broadcast on the bottom
-    // *(9) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16, unfitReason#42, clinicalCharacteristicsName#56, selected#5]
-    // +- SortMergeJoin [evaluationId#48L], [evaluationId#3L], LeftOuter
-    //    :- *(6) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16, unfitReason#42]
-    //    :  +- SortMergeJoin [evaluationId#48L], [evaluationId#41L], LeftOuter
-    //    :     :- *(3) Sort [evaluationId#48L ASC NULLS FIRST], false, 0
-    //    :     :  +- Exchange hashpartitioning(evaluationId#48L, 200)
-    //    :     :     +- *(2) Project [evaluationId#48L, imageId#27L, diagnosis#28, dermId#53, name#16]
-    //    :     :        +- *(2) BroadcastHashJoin [dermId#29], [dermId#53], Inner, BuildRight
-    //    :     :           :- *(2) Project [id#26L AS evaluationId#48L, imageId#27L, diagnosis#28, dermId#29]
-
+    // final table is constructed by 4 separate pivots
     val evp1 = evaluationsJoined
       .withColumn("pivot_column", concat(evaluationsJoined("name"), lit("_evaluationId")))
       .groupBy("imageId")
@@ -80,22 +61,22 @@ object Transformer {
       .pivot("pivot_column")
       .agg(max("unfitReasonBool"))
 
-    val evaluationPivotJoined =
+    // joining separate pivots into a single job
+    val evaluationPivot =
       evp1
         .join(evp2, "imageId")
         .join(evp3, "imageId")
         .join(evp4, "imageId")
         .drop("null")
 
+    // order the columns in the same way as the expected result
     val columnNames = new collection.mutable.ArrayBuffer[String]
     columnNames.append("imageId")
-    columnNames.appendAll(evaluationPivotJoined.columns.filter(_ != "imageId").sorted(Ordering[String].reverse))
-
-    val columns = columnNames.map(c => evaluationPivotJoined(c)).toArray
-
-    val evaluationPivotOrdered = evaluationPivotJoined.select(columns :_*).orderBy(evaluationPivotJoined("imageId"))
+    columnNames.appendAll(evaluationPivot.columns.filter(c => !Seq("imageId", "null").contains(c)).sorted(Ordering[String].reverse))
+    val columns = columnNames.map(c => evaluationPivot(c)).toArray
+    // order the rows in the same way as in the expected result
+    val evaluationPivotOrdered = evaluationPivot.select(columns :_*).orderBy(evaluationPivot("imageId"))
 
     evaluationPivotOrdered
   }
-
 }

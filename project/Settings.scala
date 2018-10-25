@@ -47,8 +47,8 @@ object Settings {
     Seq(
       "org.apache.spark" %% "spark-core" % versions.spark,
       "org.apache.spark" %% "spark-sql" % versions.spark,
-      "org.scalatest" %% "scalatest" % "3.0.5", //% Test
-      "org.junit.jupiter" % "junit-jupiter-api" % "5.3.0" //% Test
+      "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+      "org.junit.jupiter" % "junit-jupiter-api" % "5.3.0" % Test
     )
   )
 
