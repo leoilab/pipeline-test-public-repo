@@ -1,52 +1,49 @@
 package pipeline
 
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SparkSession, Dataset, Encoder}
-import Models._
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.functions.{lit, unix_timestamp}
 
 object Driver {
 
   def main(args: Array[String]): Unit = {
-    implicit val spark = setupSpark()
-    import spark.implicits._
+    // Simple benchmark
+    val start = System.nanoTime()
 
-    val clinicalCharacteristics = loadCsv[ClinicalCharacteristic](
-      "./data/clinicalCharacteristics.csv",
-      CsvSchema.clinicalCharacteristic
-    )
-    val derms = loadCsv[Derm]("./data/derms.csv", CsvSchema.derm)
-    val evaluations  = loadCsv[Evaluation]("./data/evaluations.csv", CsvSchema.evaluation)
-    val unfitReasons = loadCsv[UnfitReason]("./data/unfitReasons.csv", CsvSchema.unfitReason)
+    implicit val spark = SparkSessionAndConfigBuilder.setupSpark()
 
-    Transformer
-      .transform(
-        clinicalCharacteristics,
-        derms,
-        evaluations,
-        unfitReasons
-      )(spark)
-      .write.format("csv")
-      .save("./result.csv")
-  }
-
-  private def setupSpark(): SparkSession = {
-    val appName = "pipeline"
-    val conf    = new SparkConf().setAppName(appName).setMaster("local[*]")
-
-    SparkSession.builder().config(conf).appName(appName).getOrCreate()
-  }
-
-  private def loadCsv[M : Encoder](file: String, schema: CsvSchema.Schema[M])(implicit spark: SparkSession): Dataset[M] = {
-    import spark.implicits._
-
-    spark.read
+    //runMultipleReadTransformer()
+    runExperimentalSingleReadTransformer()
+      .withColumn("timestamp", lit(unix_timestamp())) // for folder partitioning
+      .coalesce(1) // create a single file by coalescing the Spark partitions
+      .write
       .format("csv")
-      .schema(schema)
-      .option("header", "true")
-      .option("mode", "FAILFAST")
-      .option("treatEmptyValuesAsNulls", "true")
-      .load(file)
-      .toDF()
-      .as[M]
+      .option("header","true")
+      // good practice during the dev phase, to store temporary results in separate folders
+      .mode("append")
+      .partitionBy("timestamp")
+      .save("./result.csv")
+
+    println(s"total time: ${(System.nanoTime()-start)/1000000} miliseconds")
+    Thread.sleep(300000) // when needs to look at the SparkUI
+  }
+
+  def runMultipleReadTransformer()(implicit spark: SparkSession): DataFrame = {
+    MultipleReadTransformer
+      .transform(
+        DermatologicalEvaluationWarehouseReader.openClinicalCharacteristics,
+        DermatologicalEvaluationWarehouseReader.openDerm,
+        DermatologicalEvaluationWarehouseReader.openEvaluation,
+        DermatologicalEvaluationWarehouseReader.openUnfitReason
+      )
+  }
+
+  def runExperimentalSingleReadTransformer()(implicit spark: SparkSession): DataFrame = {
+    ExperimentalSingleReadTransformer
+      .transform(
+        DermatologicalEvaluationWarehouseReader.openClinicalCharacteristicsAsStringDataFrame,
+        DermatologicalEvaluationWarehouseReader.openDermAsStringDataFrame,
+        DermatologicalEvaluationWarehouseReader.openEvaluationAsStringDataFrame,
+        DermatologicalEvaluationWarehouseReader.openUnfitReasonAsStringDataFrame
+      )
   }
 }
